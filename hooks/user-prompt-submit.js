@@ -65,6 +65,7 @@ async function main() {
 
   if (recalled.length === 0) return;
   const additionalContext = formatRecallContext(recalled, repo);
+  if (!additionalContext) return;
   process.stdout.write(
     JSON.stringify({
       hookSpecificOutput: {
