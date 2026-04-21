@@ -2,6 +2,8 @@
 
 ClawMem for Claude Code is a repo-backed durable memory plugin that provisions a per-agent route, recalls relevant memory before prompts, mirrors turns into conversation issues, and exposes manual memory tools over MCP.
 
+> **Using Codex instead?** See [clawmem-codex-plugin](https://github.com/clawmem-ai/clawmem-codex-plugin) — one TOML stanza in `~/.codex/config.toml`, same ClawMem backend.
+
 ## Install And Use
 
 Install from the GitHub-hosted marketplace:
