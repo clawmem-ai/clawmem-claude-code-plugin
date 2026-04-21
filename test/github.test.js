@@ -23,7 +23,8 @@ test("isManagedLabel recognizes managed prefixes and exacts", () => {
   assert.equal(isManagedLabel("session:abc123"), true);
   assert.equal(isManagedLabel("date:2026-04-20"), true);
   assert.equal(isManagedLabel("topic:deploy"), true);
-  assert.equal(isManagedLabel("agent:claude"), true);
+  assert.equal(isManagedLabel("agent:claude"), false);
+  assert.equal(isManagedLabel("agent-type:general-purpose"), false);
   assert.equal(isManagedLabel("source:claude-code"), false);
   assert.equal(isManagedLabel("priority:high"), false);
   assert.equal(isManagedLabel(""), false);

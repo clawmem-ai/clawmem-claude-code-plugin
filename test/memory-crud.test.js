@@ -111,6 +111,49 @@ test("updateMemory rejects hash collision with another active memory", async () 
   }
 });
 
+test("addIssueLabels ensures labels then POSTs additive labels", async () => {
+  const calls = [];
+  const server = await startMockServer((req, body) => {
+    calls.push({ method: req.method, url: req.url, body });
+    if (req.method === "POST" && req.url === "/api/v3/repos/tester/memory/labels") {
+      return { status: 201, body: "{}" };
+    }
+    if (req.method === "POST" && req.url === "/api/v3/repos/tester/memory/issues/42/labels") {
+      return { status: 200, body: "[]" };
+    }
+    return { status: 404, body: "{}" };
+  });
+  try {
+    const { port } = server.address();
+    const route = { baseUrl: `http://127.0.0.1:${port}/api/v3`, authScheme: "token", token: "t" };
+    await github.addIssueLabels(route, "tester/memory", 42, ["agent:abc123", "agent-type:general-purpose"]);
+    const ensureCalls = calls.filter((c) => c.url === "/api/v3/repos/tester/memory/labels" && c.method === "POST");
+    assert.equal(ensureCalls.length, 2, "ensureLabels should be called per label");
+    const addCall = calls.find((c) => c.url === "/api/v3/repos/tester/memory/issues/42/labels");
+    assert.ok(addCall, "expected POST to issues/42/labels");
+    assert.deepEqual(JSON.parse(addCall.body).labels, ["agent:abc123", "agent-type:general-purpose"]);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("addIssueLabels is a no-op when labels array is empty", async () => {
+  const calls = [];
+  const server = await startMockServer((req, body) => {
+    calls.push({ method: req.method, url: req.url, body });
+    return { status: 404, body: "{}" };
+  });
+  try {
+    const { port } = server.address();
+    const route = { baseUrl: `http://127.0.0.1:${port}/api/v3`, authScheme: "token", token: "t" };
+    const result = await github.addIssueLabels(route, "tester/memory", 42, []);
+    assert.equal(result, null);
+    assert.equal(calls.length, 0);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
 test("forgetMemory calls syncManagedLabels before closing", async () => {
   const calls = [];
   const issue = {

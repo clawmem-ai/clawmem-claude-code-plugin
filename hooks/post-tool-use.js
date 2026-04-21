@@ -3,11 +3,25 @@ const { appendEvent, loadState, mutateState } = require("../lib/state");
 const github = require("../lib/github");
 const { ensureRoute } = require("../lib/runtime");
 const { detectMirrorAction, parseFrontmatter } = require("../lib/auto-memory");
+const { slugify } = require("../lib/util");
 
 async function readJsonStdin() {
   const chunks = [];
   for await (const chunk of process.stdin) chunks.push(chunk);
   return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+}
+
+function extractAgentMeta(input) {
+  const agentId = String((input && input.agent_id) || "").trim();
+  const agentType = String((input && input.agent_type) || "").trim();
+  return { agentId, agentType };
+}
+
+function agentLabels(meta) {
+  const labels = [];
+  if (meta.agentId) labels.push(`agent:${slugify(meta.agentId, "sub")}`);
+  if (meta.agentType) labels.push(`agent-type:${slugify(meta.agentType, "unknown")}`);
+  return labels;
 }
 
 function memoryFieldsFromAutoMemory(filePath, content) {
@@ -21,7 +35,24 @@ function memoryFieldsFromAutoMemory(filePath, content) {
   return { title, detail, kind };
 }
 
-async function handleUpsert(route, repo, sessionId, action) {
+async function tagAgentLabels(route, repo, issueNumber, agentMeta) {
+  const labels = agentLabels(agentMeta);
+  if (labels.length === 0) return;
+  try {
+    await github.addIssueLabels(route, repo, issueNumber, labels);
+  } catch (error) {
+    appendEvent({
+      source: "hook",
+      hook: "PostToolUse",
+      type: "mirror_label_error",
+      memoryId: issueNumber,
+      labels,
+      error: String(error)
+    });
+  }
+}
+
+async function handleUpsert(route, repo, sessionId, action, agentMeta) {
   const fields = memoryFieldsFromAutoMemory(action.filePath, action.content);
   const state = loadState();
   const mirror = state.autoMemoryMirror || {};
@@ -35,6 +66,7 @@ async function handleUpsert(route, repo, sessionId, action) {
         kind: fields.kind
       });
       if (updated) {
+        await tagAgentLabels(route, repo, existingId, agentMeta);
         await github.createEvent(route, {
           repo,
           type: "auto_memory_mirror_update",
@@ -42,7 +74,13 @@ async function handleUpsert(route, repo, sessionId, action) {
           step: "post_tool_use",
           session_id: sessionId,
           message: `Mirrored auto-memory update to clawmem memory #${existingId}.`,
-          details: { file_path: action.filePath, memory_id: existingId, tool: action.tool }
+          details: {
+            file_path: action.filePath,
+            memory_id: existingId,
+            tool: action.tool,
+            agent_id: agentMeta.agentId || null,
+            agent_type: agentMeta.agentType || null
+          }
         });
         return { memoryId: existingId, created: false };
       }
@@ -66,6 +104,8 @@ async function handleUpsert(route, repo, sessionId, action) {
   const memoryId = result && result.issue && result.issue.number;
   if (!memoryId) return null;
 
+  await tagAgentLabels(route, repo, memoryId, agentMeta);
+
   mutateState((next) => {
     next.autoMemoryMirror = next.autoMemoryMirror || {};
     next.autoMemoryMirror[action.filePath] = memoryId;
@@ -81,7 +121,13 @@ async function handleUpsert(route, repo, sessionId, action) {
     message: result.created
       ? `Mirrored auto-memory write to new clawmem memory #${memoryId}.`
       : `Mirrored auto-memory write matched existing clawmem memory #${memoryId}.`,
-    details: { file_path: action.filePath, memory_id: memoryId, tool: action.tool }
+    details: {
+      file_path: action.filePath,
+      memory_id: memoryId,
+      tool: action.tool,
+      agent_id: agentMeta.agentId || null,
+      agent_type: agentMeta.agentType || null
+    }
   });
   return { memoryId, created: !!result.created };
 }
@@ -132,11 +178,12 @@ async function main() {
   if (!action) return;
 
   const sessionId = String(input.session_id || "unknown");
+  const agentMeta = extractAgentMeta(input);
   const route = await ensureRoute();
   const repo = route.defaultRepo;
 
   if (action.kind === "upsert") {
-    await handleUpsert(route, repo, sessionId, action);
+    await handleUpsert(route, repo, sessionId, action, agentMeta);
   } else if (action.kind === "delete") {
     await handleDelete(route, repo, sessionId, action);
   }
