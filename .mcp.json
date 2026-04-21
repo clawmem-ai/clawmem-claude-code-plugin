@@ -1,8 +1,11 @@
 {
-  "clawmem": {
-    "command": "node",
-    "args": [
-      "${CLAUDE_PLUGIN_ROOT}/mcp/server.js"
-    ]
+  "mcpServers": {
+    "clawmem": {
+      "command": "npx",
+      "args": ["-y", "clawmem-mcp-server"],
+      "env": {
+        "CLAWMEM_AGENT_PREFIX": "claude"
+      }
+    }
   }
 }

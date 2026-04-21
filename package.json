@@ -1,8 +1,8 @@
 {
   "name": "clawmem-claude-code-plugin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "ClawMem durable memory plugin for Claude Code.",
+  "description": "ClawMem durable memory plugin for Claude Code. Ships Claude-Code-specific hooks; memory / issue / collaboration tools are served by the shared clawmem-mcp-server binary.",
   "scripts": {
     "test": "node --test test/*.test.js",
     "test:e2e": "bash ./e2e/claude-cli-smoke.sh",
