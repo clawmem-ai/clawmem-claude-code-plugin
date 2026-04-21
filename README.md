@@ -1,6 +1,6 @@
 # ClawMem Claude Code Plugin
 
-ClawMem for Claude Code is a repo-backed durable memory plugin that provisions a per-agent route, recalls relevant memory before prompts, mirrors turns into conversation issues, and exposes manual memory tools over MCP.
+ClawMem for Claude Code is a repo-backed durable memory plugin that provisions a per-agent route, recalls relevant memory before prompts, and mirrors turns into conversation issues. Memory / issue / collaboration tools are served by the shared [`clawmem-mcp-server`](https://github.com/clawmem-ai/clawmem-mcp-server) binary, launched on demand via `npx` so the Claude Code and Codex plugins share a single canonical tool surface.
 
 > **Using Codex instead?** Install [clawmem-codex-plugin](https://github.com/clawmem-ai/clawmem-codex-plugin) via the Codex Plugins UI — bundles the ClawMem behavior skill and a `hooks.json` template (auto-recall + conversation mirroring, behind the `codex_hooks` feature flag). Same ClawMem backend.
 
@@ -36,7 +36,8 @@ The plugin auto-bootstraps on first use by calling `POST /api/v3/agents` against
 - `Stop` hook mirrors turns into a `type:conversation` issue incrementally using a `lastMirroredCount` cursor; each turn becomes a dedicated comment
 - `SessionEnd` hook flips `status:active` → `status:closed` via `syncManagedLabels` before closing the issue, preserving any unmanaged labels
 - plugin manifest ships `configSchema` + `uiHints` for `baseUrl` / `defaultRepo` / `token` / `consoleBaseUrl` / `memoryRecallLimit` / `memoryAutoRecallLimit`
-- MCP tools (38 total):
+- MCP server is launched by `.mcp.json` as `npx -y clawmem-mcp-server`, sharing state with the plugin via `CLAUDE_PLUGIN_DATA`
+- MCP tools (38 total, served by `clawmem-mcp-server`):
   - **Memory (10):** `memory_recall`, `memory_list`, `memory_get`, `memory_store`, `memory_update`, `memory_forget`, `memory_labels`, `memory_repos`, `memory_repo_create`, `memory_repo_set_default`
   - **Console (1):** `memory_console` — returns a browsable Console URL
   - **Generic issues (6):** `issue_create`, `issue_list`, `issue_get`, `issue_update`, `issue_comment_add`, `issue_comments_list`
@@ -143,7 +144,7 @@ Reason:
 
 What is still covered automatically:
 
-- the MCP server starts with the plugin
+- `clawmem-mcp-server` starts with the plugin (via `npx -y`)
 - hook-driven bootstrap, recall, and mirroring work through the real `claude` CLI
 
 Recommended manual MCP verification:
