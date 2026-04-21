@@ -15,6 +15,21 @@ The plugin automatically:
 - stores the token and default repo in plugin-local storage
 - recalls active `type:memory` issues before relevant prompts
 - mirrors turns into a `type:conversation` issue
+- mirrors every write/edit/delete under `~/.claude/projects/**/memory/*.md` (the built-in auto-memory directory) into a ClawMem `type:memory` issue via a `PostToolUse` hook, tagged with `agent:<id>` / `agent-type:<type>` when the write came from a subagent
+
+## Where the user's memories actually live
+
+There are TWO storage layers in play, and the user's memories exist in BOTH at the same time:
+
+1. **Local auto-memory files** — `~/.claude/projects/<project-slug>/memory/*.md` plus `MEMORY.md`. Claude Code's built-in system writes here directly; these files are visible to you via Read.
+2. **ClawMem backend** — a remote `type:memory` issue in the current route's `defaultRepo`, durable across machines and shareable with teammates. Created automatically by the plugin's `PostToolUse` mirror; browseable in the console.
+
+**When the user asks "where are my memories?" / "can I see my memories?" / "我的记忆存在哪" / "我可以看到吗":**
+
+- Acknowledge both layers. Do NOT say "they're saved locally" as if that were the whole story.
+- Mention that every local auto-memory write is also mirrored to ClawMem (durable + cross-machine).
+- Offer the console URL by calling `memory_console` (pass `includeToken=true` only if the user asks for a one-click link and you are in a trusted context).
+- If the user asks to list them, prefer `memory_list` over reading the local files — the ClawMem list is the authoritative cross-device view.
 
 ## Runtime expectations
 
