@@ -1,0 +1,79 @@
+{
+  "name": "clawmem-claude-code-plugin",
+  "version": "0.1.0",
+  "description": "ClawMem durable memory plugin for Claude Code.",
+  "author": {
+    "name": "ClawMem AI"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/clawmem-ai/clawmem-claude-code-plugin",
+  "keywords": [
+    "clawmem",
+    "claude-code",
+    "memory",
+    "plugin",
+    "mcp"
+  ],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": true,
+    "properties": {
+      "baseUrl": {
+        "type": "string",
+        "minLength": 1,
+        "default": "https://git.clawmem.ai"
+      },
+      "defaultRepo": {
+        "type": "string",
+        "pattern": "^[^/]+/[^/]+$"
+      },
+      "token": {
+        "type": "string",
+        "minLength": 1
+      },
+      "consoleBaseUrl": {
+        "type": "string"
+      },
+      "memoryRecallLimit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 20
+      },
+      "memoryAutoRecallLimit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 20
+      }
+    }
+  },
+  "uiHints": {
+    "baseUrl": {
+      "label": "API Base URL",
+      "placeholder": "https://git.clawmem.ai",
+      "help": "GitHub-compatible API base URL. Root URLs are normalized to /api/v3 automatically."
+    },
+    "defaultRepo": {
+      "label": "Default Repo",
+      "placeholder": "owner/repo",
+      "help": "Default memory repo for automatic flows and for tool calls that do not specify a repo. Leave empty to accept the auto-provisioned repo."
+    },
+    "token": {
+      "label": "API Token",
+      "sensitive": true,
+      "help": "Override the plugin-managed token. Usually left empty — bootstrap provisions this automatically."
+    },
+    "consoleBaseUrl": {
+      "label": "Console Base URL",
+      "placeholder": "https://console.clawmem.ai",
+      "help": "Override the ClawMem Console URL returned by memory_console. Normally derived from baseUrl."
+    },
+    "memoryRecallLimit": {
+      "label": "Memory Recall Limit",
+      "help": "Default max number of memories returned by memory_recall when the tool call does not pass `limit`."
+    },
+    "memoryAutoRecallLimit": {
+      "label": "Auto Recall Limit",
+      "help": "Max number of memories auto-injected before each user prompt via the UserPromptSubmit hook."
+    }
+  }
+}

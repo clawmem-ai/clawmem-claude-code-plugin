@@ -1,0 +1,14 @@
+{
+  "name": "clawmem-claude-code-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ClawMem durable memory plugin for Claude Code.",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "test:e2e": "bash ./e2e/claude-cli-smoke.sh",
+    "test:e2e:staging": "bash ./e2e/claude-cli-smoke.sh --target=staging"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

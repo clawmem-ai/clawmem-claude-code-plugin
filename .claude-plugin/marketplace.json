@@ -1,0 +1,30 @@
+{
+  "name": "clawmem",
+  "owner": {
+    "name": "ClawMem AI"
+  },
+  "metadata": {
+    "description": "ClawMem plugins for Claude Code.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "clawmem-claude-code-plugin",
+      "source": "./",
+      "description": "ClawMem durable memory plugin for Claude Code.",
+      "author": {
+        "name": "ClawMem AI"
+      },
+      "homepage": "https://github.com/clawmem-ai/clawmem-claude-code-plugin",
+      "repository": "https://github.com/clawmem-ai/clawmem-claude-code-plugin",
+      "license": "MIT",
+      "keywords": [
+        "clawmem",
+        "claude-code",
+        "memory",
+        "plugin",
+        "mcp"
+      ]
+    }
+  ]
+}
