@@ -70,6 +70,19 @@ test("PreCompact agent finalize prompt references required tools and timeout", (
   assert.equal(preCompactAgent.timeout, 90);
 });
 
+test("both finalize agent prompts include a Scope restriction section", () => {
+  const hooks = loadJson(HOOKS_JSON);
+  const sessionEndPrompt = hooks.hooks.SessionEnd[0].hooks[0].prompt;
+  const preCompactPrompt = hooks.hooks.PreCompact[0].hooks[0].prompt;
+
+  for (const [label, prompt] of [["SessionEnd", sessionEndPrompt], ["PreCompact", preCompactPrompt]]) {
+    assert.match(prompt, /Scope restriction:/, `${label} prompt should declare Scope restriction`);
+    assert.match(prompt, /do not explore the repository/i, `${label} prompt should forbid repo exploration`);
+    assert.match(prompt, /do not modify code/i, `${label} prompt should forbid code modification`);
+    assert.match(prompt, /5[–-]10 tool calls/, `${label} prompt should cap tool-call count`);
+  }
+});
+
 test("plugin manifest declares summaryWaitTimeoutMs config with correct bounds", () => {
   const manifest = loadJson(PLUGIN_MANIFEST);
   const props = manifest.configSchema.properties;
