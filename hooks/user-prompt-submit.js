@@ -1,8 +1,22 @@
 #!/usr/bin/env node
-const { appendEvent, mutateState } = require("../lib/state");
-const { resolveMemoryAutoRecallLimit } = require("../lib/config");
+const { appendEvent, loadState, mutateState } = require("../lib/state");
+const { resolveMemoryAutoRecallLimit, resolveReviewNudgeInterval } = require("../lib/config");
+const { EventType } = require("../lib/events");
 const github = require("../lib/github");
 const { ensureRoute, formatRecallContext, recall } = require("../lib/runtime");
+
+function buildReviewNudgeContext(turnsSinceReview, interval) {
+  return [
+    "<clawmem-review-nudge>",
+    `It has been ${turnsSinceReview} user turn(s) since the last ClawMem review (interval: ${interval}).`,
+    "Before concluding this turn, run the review protocol in `skills/clawmem/references/review.md`:",
+    "- Memory track: save new preferences, corrections, validations, and stale beliefs via `memory_store` / `memory_update` / `memory_forget`.",
+    "- Skill track: capture or refine `kind:skill` playbooks for non-trivial workflows that succeeded this segment.",
+    "- Promote two or more converging `kind:lesson` memories into one `kind:skill` when they point at the same corrective direction.",
+    "Call the `mcp__clawmem__memory_review` MCP tool if you want the full checklist returned as tool output. Calling it clears this nudge.",
+    "</clawmem-review-nudge>"
+  ].join("\n");
+}
 
 async function readJsonStdin() {
   const chunks = [];
@@ -30,6 +44,7 @@ async function main() {
   });
 
   let recalled = [];
+  let recallFailed = false;
   try {
     if (prompt) recalled = await recall(route, repo, prompt, resolveMemoryAutoRecallLimit());
     await github.createEvent(route, {
@@ -45,27 +60,48 @@ async function main() {
       }
     });
   } catch (error) {
+    recallFailed = true;
     appendEvent({
       source: "hook",
       hook: "UserPromptSubmit",
       type: "recall_error",
       error: String(error)
     });
-    return;
   }
 
-  appendEvent({
-    source: "hook",
-    hook: "UserPromptSubmit",
-    type: "recall_complete",
-    sessionId,
-    repo,
-    count: recalled.length
-  });
+  if (!recallFailed) {
+    appendEvent({
+      source: "hook",
+      hook: "UserPromptSubmit",
+      type: "recall_complete",
+      sessionId,
+      repo,
+      count: recalled.length
+    });
+  }
 
-  if (recalled.length === 0) return;
-  const additionalContext = formatRecallContext(recalled, repo);
-  if (!additionalContext) return;
+  const interval = resolveReviewNudgeInterval();
+  const turnsSinceReview = Number((loadState().sessions[sessionId] || {}).turnsSinceReview || 0);
+  const nudgeContext = interval > 0 && turnsSinceReview >= interval
+    ? buildReviewNudgeContext(turnsSinceReview, interval)
+    : "";
+
+  if (nudgeContext) {
+    appendEvent({
+      source: "hook",
+      hook: "UserPromptSubmit",
+      type: EventType.REVIEW_NUDGE_FIRED,
+      sessionId,
+      turnsSinceReview,
+      interval
+    });
+  }
+
+  const recallContext = recalled.length > 0 ? formatRecallContext(recalled, repo) : "";
+  const parts = [recallContext, nudgeContext].filter(Boolean);
+  if (parts.length === 0) return;
+  const additionalContext = parts.join("\n");
+
   process.stdout.write(
     JSON.stringify({
       hookSpecificOutput: {

@@ -187,11 +187,13 @@ async function main() {
   });
 
   const mirroredCount = cursor + newTurns.length;
+  const turnDelta = newTurns.length > 0 ? 1 : 0;
   mutateState((nextState) => {
     const nextSession = nextState.sessions[sessionId] || {};
     nextSession.conversationIssueNumber = issueNumber;
     nextSession.lastMirroredCount = mirroredCount;
     nextSession.nextTurnId = turnId;
+    nextSession.turnsSinceReview = (nextSession.turnsSinceReview || 0) + turnDelta;
     delete nextSession.pendingTurn;
     delete nextSession.lastMirroredTurnId;
     nextState.sessions[sessionId] = nextSession;

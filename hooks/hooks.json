@@ -22,6 +22,16 @@
             "timeout": 20
           }
         ]
+      },
+      {
+        "matcher": "mcp__clawmem__memory_review",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use.js\"",
+            "timeout": 20
+          }
+        ]
       }
     ],
     "Stop": [

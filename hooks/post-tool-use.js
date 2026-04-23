@@ -1,9 +1,37 @@
 #!/usr/bin/env node
 const { appendEvent, loadState, mutateState } = require("../lib/state");
+const { EventType } = require("../lib/events");
 const github = require("../lib/github");
 const { ensureRoute } = require("../lib/runtime");
 const { detectMirrorAction, parseFrontmatter } = require("../lib/auto-memory");
 const { slugify } = require("../lib/util");
+
+const MEMORY_REVIEW_TOOL = "mcp__clawmem__memory_review";
+
+function maybeResetReviewCounter(input) {
+  const toolName = String((input && input.tool_name) || "");
+  if (toolName !== MEMORY_REVIEW_TOOL) return false;
+  const sessionId = String(input.session_id || "unknown");
+  let didReset = false;
+  mutateState((next) => {
+    const session = next.sessions[sessionId] || {};
+    if ((session.turnsSinceReview || 0) !== 0) {
+      session.turnsSinceReview = 0;
+      didReset = true;
+    }
+    next.sessions[sessionId] = session;
+    return next;
+  });
+  if (didReset) {
+    appendEvent({
+      source: "hook",
+      hook: "PostToolUse",
+      type: EventType.MEMORY_REVIEW_RESET,
+      sessionId
+    });
+  }
+  return true;
+}
 
 async function readJsonStdin() {
   const chunks = [];
@@ -174,6 +202,7 @@ async function handleDelete(route, repo, sessionId, action) {
 
 async function main() {
   const input = await readJsonStdin();
+  if (maybeResetReviewCounter(input)) return;
   const action = detectMirrorAction(input);
   if (!action) return;
 
