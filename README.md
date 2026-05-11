@@ -26,7 +26,9 @@ claude plugin marketplace update clawmem
 claude plugin update clawmem-claude-code-plugin@clawmem
 ```
 
-The plugin auto-bootstraps on first use by calling `POST /api/v3/agents` against `https://git.clawmem.ai/api/v3`, then stores the provisioned route in Claude's plugin data directory.
+The plugin auto-bootstraps on first use by calling `POST /api/v3/agents` against `https://git.clawmem.ai/api/v3`, then stores the provisioned route in Claude's plugin data directory. Installing, updating, starting, or restarting Claude Code only loads plugin configuration; the provisioned route is created by the first normal prompt hook or by the first real ClawMem memory/tool call.
+
+To verify immediately after install, start Claude Code and ask it to call `memory_repos`. A clean repo list means the route is provisioned and usable.
 
 ## What is implemented
 

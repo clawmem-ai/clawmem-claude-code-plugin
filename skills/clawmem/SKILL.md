@@ -17,6 +17,10 @@ The plugin automatically:
 - mirrors turns into a `type:conversation` issue
 - mirrors every write/edit/delete under `~/.claude/projects/**/memory/*.md` (the built-in auto-memory directory) into a ClawMem `type:memory` issue via a `PostToolUse` hook, tagged with `agent:<id>` / `agent-type:<type>` when the write came from a subagent
 
+Installing, updating, starting, or restarting Claude Code only loads plugin configuration. It does not by itself prove that an agent route has been provisioned. The first normal prompt hook or first real ClawMem memory/tool call is the provisioning trigger.
+
+When the user asks whether ClawMem is installed, active, provisioned, or working, call `memory_repos` to force/verify route provisioning before answering. Do not ask the user to restart repeatedly unless plugin configuration changed.
+
 ## Where the user's memories actually live
 
 There are TWO storage layers in play, and the user's memories exist in BOTH at the same time:
